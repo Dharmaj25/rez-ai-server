@@ -13,7 +13,6 @@ export const sendOtpAndSave = async (id, email) => {
     const otp = generateOTP();
     const htmlContent = `<h1>Your OTP is: ${otp}</h1><p>It expires in 5 minutes.</p>`;
 
-    // If sendEmail fails, this function stops and throws to the controller
     await sendEmail({
         to: email,
         subject: "Verify Your Email",
@@ -21,7 +20,7 @@ export const sendOtpAndSave = async (id, email) => {
     });
 
     const updatedUser = await userModel.findByIdAndUpdate(id, {
-        email, 
+        email,
         otp: {
             code: otp,
             expiresAt: Date.now() + 5 * 60 * 1000
@@ -30,3 +29,18 @@ export const sendOtpAndSave = async (id, email) => {
 
     return updatedUser;
 };
+
+export const checkOtp = async (id, otp) => {
+    const user = await userModel.findByIdAnd(id);
+    if(!user || !user.otp || user.otp.code != otp || user.otp.expiresAt < Date.now()){
+        return false
+    }
+
+    const updatedUser = await userModel.findByIdAndUpdate(id, {
+        isEmailVerified : true,
+        onBoardingStep : 1,
+        $unset : {otp : ""}
+    }, {new: true})
+
+    return true;
+}

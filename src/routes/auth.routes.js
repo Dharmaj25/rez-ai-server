@@ -1,12 +1,12 @@
 import express from "express";
-
-import * as authController from "../controllers/auth.controller.js";
-import { authenticate } from "../middlewares/authenticate.js";
+import { getOnboardingDetails, sendOtp, verifyOtp } from "../controllers/auth.controller.js";
+import { sendOtpValidator, verifyOtpValidator } from "../validations/auth.validator.js";
+import { authenticate } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.get("/me", authenticate, authController.getOnboardingDetails);
-router.post("/send-otp", authenticate, authController.sendOtp);
-router.post("/verify-otp", authenticate, authController.verifyOtp);
+router.get("/me", authenticate, getOnboardingDetails);
+router.post("/send-otp", authenticate, sendOtpValidator, sendOtp);
+router.post("/verify-otp", authenticate, verifyOtpValidator, verifyOtp);
 
 export default router;

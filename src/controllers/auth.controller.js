@@ -1,8 +1,5 @@
-import mongoose from "mongoose";
+import { fetchOnboardingDetails, sendOtpAndSave, checkOtp } from "../services/auth.service.js"
 
-import { fetchOnboardingDetails, sendOtpAndSave } from "../services/auth.service.js"
-
-//Returns the important flags to check for user's onboarding progress 
 export const getOnboardingDetails = async (req, res) => {
     try {
         const userId = req.user.id;
@@ -30,15 +27,10 @@ export const getOnboardingDetails = async (req, res) => {
     }
 }
 
-//Send's otp to user's email
 export const sendOtp = async (req, res) => {
     try {
         const userId = req.user.id;
         const email = req.body.email;
-
-        if (!email) {
-            return res.status(400).json({ success: false, message: "Email is required" });
-        }
 
         const updatedUser = await sendOtpAndSave(userId, email);
 
@@ -52,8 +44,7 @@ export const sendOtp = async (req, res) => {
         });
 
     } catch (error) {
-        // Any error in sendEmail or the DB update ends up here
-        console.error("Internal Error:", error); 
+        console.error("Internal Error:", error);
         return res.status(500).json({
             success: false,
             message: "Failed to send OTP. Please try again later."
@@ -61,9 +52,37 @@ export const sendOtp = async (req, res) => {
     }
 };
 
-//matches the otp sent by user , if not matched send not matched, if matched,
-//update users flag isOtpVerified to true , and onBoardingStep to 1
-export const verifyOtp = async () => {
+export const verifyOtp = async (req, res) => {
+    try {
+        const userId = req.user.id
+        const otp = req.body.otp
 
-}
+        if (!otp) {
+            return res.status(400).json({
+                success: false,
+                message: "OTP is required"
+            })
+        }
 
+        const isOtpValid = await checkOtp(userId, otp);
+
+        if (!isOtpValid) {
+            return res.staus(400).json({
+                success: false,
+                message: "Incorrect OTP. Please try again"
+            })
+        }
+        
+        return res.status(200).json({
+            success: true,
+            message : "OTP Validated successfully"
+        })
+    }
+    catch (error) {
+        console.log("Error in otp validation : ", error);
+        return res.status(500).json({
+            success: false,
+            mesasge: "Internal server error"
+        })
+    }
+};

@@ -17,25 +17,25 @@ const userSchema = new mongoose.Schema(
             enum: ["local", "google", "github", "linkedin"],
             default: "local"
         },
-        isEmailVerified:  {
+        isEmailVerified: {
             type: Boolean,
-            default : false
+            default: false
         },
         otp: {
-            code : {
-                type : String
+            code: {
+                type: String
             },
-            expiresAt : {
-                type : Date
+            expiresAt: {
+                type: Date
             }
         },
-        isOnBoardingCompleted : {
-            type : Boolean,
-            default : false
+        isOnBoardingCompleted: {
+            type: Boolean,
+            default: false
         },
-        onBoardingStep : {
-            type : Number,
-            default : 0
+        onBoardingStep: {
+            type: Number,
+            default: 0
         },
         personal_details: {
             first_name: {
@@ -46,7 +46,7 @@ const userSchema = new mongoose.Schema(
             last_name: {
                 type: String,
                 required: true,
-                trim : true
+                trim: true
             },
             country: {
                 type: String,
@@ -60,12 +60,14 @@ const userSchema = new mongoose.Schema(
                 type: String,
                 required: true
             },
-            phone_number: {
-                type: String,
+            phone: {
+                country_code: {
+                    type: String
+                },
+                number: {
+                    type: String
+                }
             },
-            country_code: {
-                type: String
-            }
         },
         professional_details: {
             career_level: String,
@@ -80,13 +82,13 @@ const userSchema = new mongoose.Schema(
         },
         career_target: {
             target_role: {
-                type : String,
+                type: String,
                 required: true
             },
-            pitch : String
+            pitch: String
         },
     },
-    {timestamps : true}
+    { timestamps: true }
 );
 
-export default mongoose.model("User" , userSchema)
+export default mongoose.model("User", userSchema)
