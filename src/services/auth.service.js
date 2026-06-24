@@ -1,15 +1,21 @@
 import userModel from "../models/user.model.js"
 import { generateOTP } from "../utils/crypto.util.js";
 import { sendEmail } from "../utils/mailer.utils.js";
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 export const fetchOnboardingDetails = async (id) => {
-    const user = await userModel.
-        findById(id, { isEmailVerified: 1, isOnBoardingCompleted: 1, onBoardingStep: 1 }).
-        lean();
+    const user = await userModel.findById(id, { isEmailVerified: 1, isOnBoardingCompleted: 1, accountSetupStep: 1 }).lean();
     return user;
 }
 
-export const sendOtpAndSave = async (id, email) => {
+export const sendOtpAndSave = async (email) => {
+
+    const userExists = await userModel.findOne({ email });
+    if (userExists) {
+        return false
+    }
+
     const otp = generateOTP();
     const htmlContent = `<h1>Your OTP is: ${otp}</h1><p>It expires in 5 minutes.</p>`;
 
@@ -19,28 +25,159 @@ export const sendOtpAndSave = async (id, email) => {
         html: htmlContent
     });
 
-    const updatedUser = await userModel.findByIdAndUpdate(id, {
+    const hashedOtp = await bcrypt.hash(otp.toString(), 10);
+
+    const insertedUser = await userModel.create({
         email,
         otp: {
-            code: otp,
-            expiresAt: Date.now() + 5 * 60 * 1000
+            code: hashedOtp,
+            expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+            attempts: 1
         }
+    });
+
+    return insertedUser;
+};
+
+export const checkOtp = async (email, otp) => {
+
+    const user = await userModel.findOne({ email });
+
+    if (!user || !user.otp) {
+        return false
+    }
+
+    const isOtpMatched = await bcrypt.compare(otp.toString(), user.otp.code);
+
+    if (!isOtpMatched || user.otp.expiresAt < new Date()) {
+        return false
+    }
+
+    const updatedUser = await userModel.findOneAndUpdate({ email }, {
+        isEmailVerified: true,
+        $unset: { otp: "" },
+        accountSetupStep: "PASSWORD_SETUP"
+    },
+        { new: true }
+    )
+
+    return updatedUser;
+}
+
+export const resendOtpAndUpdate = async (email) => {
+    const user = await userModel.findOne({ email });
+
+    if (!user || !user.otp) {
+        return false
+    }
+
+    const otp = generateOTP().toString();
+
+    const htmlContent = `<h1>Your OTP is: ${otp}</h1><p>It expires in 5 minutes.</p>`;
+
+    await sendEmail({
+        to: email,
+        subject: "Verify Your Email",
+        html: htmlContent
+    });
+
+    const hashedOtp = await bcrypt.hash(otp, 10);
+    const updatedUser = await userModel.findOneAndUpdate({ email },
+        {
+            $set: {
+                "otp.code": hashedOtp,
+                "otp.expiresAt": new Date(Date.now() + 5 * 60 * 1000),
+            },
+            $inc: {
+                "otp.attempts": 1
+            }
+        }
+        , {
+            new: true
+        });
+
+    return updatedUser;
+}
+
+export const savePassword = async (email, password) => {
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const updatedUser = await userModel.findOneAndUpdate({ email }, {
+        passwordHash: hashedPassword,
+        accountSetupStep: "PERSONAL_DETAILS"
     }, { new: true });
+
+    return updatedUser;
+}
+
+export const checkEmailPassword = async (email, password) => {
+    const user = await userModel.findOne({ email }).select('passwordHash _id email isEmailVerified accountSetupStep onboarding');
+
+    if (!user) {
+        return false;
+    }
+
+    const passwordMatched = await bcrypt.compare(password, user.passwordHash);
+
+    if (!passwordMatched) {
+        return false;
+    }
+
+    return {
+        _id: user._id,
+        email: user.email,
+        isEmailVerified: user.isEmailVerified,
+        accountSetupStep: user.accountSetupStep,
+        onboarding: user.onboarding,
+    };
+};
+
+
+export const saveResetToken = async (email, resetToken) => {
+    const updatedUser = await userModel.findOneAndUpdate(
+        { email },
+        {
+            $set: {
+                "resetPassword.tokenHash": resetToken.tokenHash,
+                "resetPassword.expiresAt": resetToken.expiresAt
+            }
+        },
+        { new: true }
+    );
 
     return updatedUser;
 };
 
-export const checkOtp = async (id, otp) => {
-    const user = await userModel.findByIdAnd(id);
-    if(!user || !user.otp || user.otp.code != otp || user.otp.expiresAt < Date.now()){
-        return false
+export const checkResetToken = async (token) => {
+    const tokennHash = crypto.createHash("sha256").update(token || "").digest("hex");
+
+    const user = await userModel.findOne({
+        "resetPassword.tokenHash": tokennHash,
+        "resetPassword.expiresAt": { $gt: new Date() }
+    });
+
+    return user;
+}
+
+export const resetUserPassword = async (token, password) => {
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+    let user = userModel.findOne({
+        "resetPassword.tokenHash": tokenHash,
+        "resetPassword.expiresAt": {$gt: new Date()}
+    });
+
+    if(!user){
+        return false;
     }
 
-    const updatedUser = await userModel.findByIdAndUpdate(id, {
-        isEmailVerified : true,
-        onBoardingStep : 1,
-        $unset : {otp : ""}
+    const newPasswordHash = bcrypt.hash(password, 10);
+
+    user = userModel.findOneAndUpdate({email: user.email}, {
+        $set: {
+            "passwordHash":newPasswordHash 
+        }
     }, {new: true})
 
-    return true;
+    return user;
 }

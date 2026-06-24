@@ -4,32 +4,32 @@ import mongoose from "mongoose";
 export const authenticate = (req, res, next) => {
     const authHeader = req.headers.authorization;
 
-    const token = authHeader && authHeader.split(" ")[1];
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : null;
 
     if (!token) {
         return res.status(401).json({
             success: false,
-            message: "Token missing"
+            message: "Access token missing"
         });
     }
 
     try {
-        const decodedPayload = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
-        if (!decodedPayload.id || !mongoose.Types.ObjectId.isValid(decodedPayload.id)) {
+        if (!decoded.id || !mongoose.Types.ObjectId.isValid(decoded.id)) {
             return res.status(401).json({
                 success: false,
-                message: "Invalid session data",
+                message: "Invalid token payload"
             });
         }
 
-        req.user = decodedPayload;
+        req.user = {id: decoded.id};
         next();
 
     } catch (err) {
-        return res.status(403).json({
+        return res.status(401).json({
             success: false,
-            message: "Invalid or expired token"
+            message: "Invalid or expired access token",
         });
     }
 };

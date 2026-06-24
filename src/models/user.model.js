@@ -4,91 +4,166 @@ const userSchema = new mongoose.Schema(
     {
         email: {
             type: String,
-            required: true,
             unique: true,
-            lowercase: true
+            lowercase: true,
+            trim: true
         },
-        password: {
-            type: String,
-            required: true
+
+        passwordHash: {
+            type: String
         },
+
         authProvider: {
             type: String,
             enum: ["local", "google", "github", "linkedin"],
             default: "local"
         },
+
         isEmailVerified: {
             type: Boolean,
             default: false
         },
+
+        resetPassword: {
+            tokenHash: String,
+            expiresAt: Date
+        },
+
         otp: {
             code: {
                 type: String
             },
             expiresAt: {
                 type: Date
+            },
+            attempts: {
+                type: Number,
+                default: 0
             }
         },
-        isOnBoardingCompleted: {
-            type: Boolean,
-            default: false
+
+        accountSetupStep: {
+            type: String,
+            enum: [
+                "OTP_VERIFICATION",
+                "PASSWORD_SETUP",
+                "PERSONAL_DETAILS",
+                "COMPLETED"
+            ],
+            default: "OTP_VERIFICATION"
         },
-        onBoardingStep: {
-            type: Number,
-            default: 0
+
+        onboarding: {
+            personalCompleted: {
+                type: Boolean,
+                default: false
+            },
+
+            professionalCompleted: {
+                type: Boolean,
+                default: false
+            },
+
+            careerCompleted: {
+                type: Boolean,
+                default: false
+            }
         },
-        personal_details: {
+
+
+        personalDetails: {
             first_name: {
                 type: String,
-                required: true,
                 trim: true
             },
+
             last_name: {
                 type: String,
-                required: true,
                 trim: true
             },
+
             country: {
                 type: String,
-                required: true
+                trim: true
             },
+
             state: {
                 type: String,
-                required: true
+                trim: true
             },
+
             city: {
                 type: String,
-                required: true
+                trim: true
             },
+
             phone: {
                 country_code: {
                     type: String
                 },
+
                 number: {
                     type: String
                 }
+            }
+        },
+
+
+        professionalDetails: {
+            career_level: {
+                type: String
             },
+
+            industry: {
+                type: String
+            },
+
+            skills: [
+                {
+                    type: String
+                }
+            ],
+
+            total_experience: {
+                type: Number
+            },
+
+            current_role: {
+                type: String
+            },
+
+            highest_education: {
+                type: String
+            },
+
+            graduation_year: {
+                type: Number
+            },
+
+            linkedin_profile: {
+                type: String
+            },
+
+            portfolio: {
+                type: String
+            }
         },
-        professional_details: {
-            career_level: String,
-            industry: String,
-            skills: [String],
-            total_experience: String,
-            current_role: String,
-            highest_education: String,
-            graduation_year: String,
-            linkedin_profile: String,
-            portfolio: String
-        },
-        career_target: {
+
+
+        careerTarget: {
             target_role: {
-                type: String,
-                required: true
+                type: String
             },
-            pitch: String
-        },
+
+            pitch: {
+                type: String
+            }
+        }
     },
-    { timestamps: true }
+    {
+        timestamps: true
+    }
 );
 
-export default mongoose.model("User", userSchema)
+
+export default mongoose.model("User", userSchema);
