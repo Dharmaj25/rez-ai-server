@@ -62,3 +62,15 @@ export const saveCareerSummary = async (userId, career_target) => {
     const updatedUser = await userModel.findByIdAndUpdate(userId, updatePayload, { new: true });
     return updatedUser;
 }
+
+export const getUserById = async (userId) => {
+    const user = await userModel.findById(userId, {
+        __v: 0,
+        otp: 0,
+        passwordHash: 0,
+        resetPassword: 0
+
+    });
+
+    return user;
+}

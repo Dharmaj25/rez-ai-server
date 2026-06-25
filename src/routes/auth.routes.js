@@ -1,6 +1,6 @@
 import express from "express";
 import {
-    getOnboardingDetails, sendOtp, verifyOtp,
+    checkAuth, sendOtp, verifyOtp,
     refreshAccessToken, resendOtp, setPassword,
     login, requestPasswordReset, validateResetToken,
     resetPassword
@@ -14,7 +14,7 @@ import { authenticate } from "../middlewares/auth.middleware.js";
 const router = express.Router();
 
 
-router.get("/me", authenticate, getOnboardingDetails);
+router.get("/me", authenticate, checkAuth);
 
 router.post("/refresh", refreshAccessToken);
 router.post("/send-otp", emailValidator, sendOtp);

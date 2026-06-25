@@ -1,14 +1,15 @@
-import { fetchOnboardingDetails, sendOtpAndSave, checkOtp, resendOtpAndUpdate, savePassword, checkEmailPassword, saveResetToken, checkResetToken, resetUserPassword } from "../services/auth.service.js"
+import { sendOtpAndSave, checkOtp, resendOtpAndUpdate, savePassword, checkEmailPassword, saveResetToken, checkResetToken, resetUserPassword } from "../services/auth.service.js"
+import { getUserById } from "../services/user.service.js";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { sendEmail } from "../utils/mailer.utils.js";
 
-export const getOnboardingDetails = async (req, res) => {
-    try {
+export const checkAuth = async (req, res) => {
+    try{
         const userId = req.user.id;
+        const userDetails = await getUserById(userId);
 
-        const userData = await fetchOnboardingDetails(userId);
-        if (!userData) {
+        if(!userDetails){
             return res.status(404).json({
                 success: false,
                 message: "User not found"
@@ -17,16 +18,16 @@ export const getOnboardingDetails = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            message: "User details found",
-            data: userData
+            message : "Valid user session",
+            user: userDetails
         });
     }
-    catch (error) {
-        console.log("Error in fetching onboarding details : ", error);
+    catch(err){
+        console.log("Error fetching user details: ", err);
         return res.status(500).json({
             success: false,
             message: "Internal server error"
-        });
+        })
     }
 }
 
@@ -36,7 +37,7 @@ export const sendOtp = async (req, res) => {
         const otpSent = await sendOtpAndSave(email);
 
         if (!otpSent) {
-            return res.status(409).json({ success: false, message: "Email is already registered" });
+            return res.status(409).json({ success: false, message: "Email is already in use. Please try again with a different email." });
         }
 
         return res.status(200).json({
@@ -249,22 +250,54 @@ export const requestPasswordReset = async (req, res) => {
 };
 
 export const validateResetToken = async (req, res) => {
-    const token = req.query.token;
-    const isTokenValid = await checkResetToken(token);
+    try {
+        const token = req.query.token;
+        const isTokenValid = await checkResetToken(token);
 
-    if (!isTokenValid) {
-        return res.status(400).json({
+        if (!isTokenValid) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid or expired token"
+            })
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Valid reset token"
+        });
+    }
+    catch (err) {
+        console.log("Error validating token: ", err)
+        return res.status(500).json({
             success: false,
-            message: "Invalid or expired token"
+            message: "Internal server error"
         })
     }
-
-    return res.status(200).json({
-        success: true,
-        message: "Valid reset token"
-    });
 }
 
-export const resetPassword = async (token, password) => {   
-    const passwordUpdated = await resetUserPassword()
+export const resetPassword = async (req, res) => {
+    try {
+        const { token, password } = req.body;
+
+        const passwordUpdated = await resetUserPassword(token, password);
+
+        if (!passwordUpdated) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid or expired token"
+            })
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Password updated successfully"
+        });
+    }
+    catch (err) {
+        console.log("Error occured resetting password: ", err);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        })
+    }
 }   

@@ -70,7 +70,6 @@ const userSchema = new mongoose.Schema(
             }
         },
 
-
         personalDetails: {
             first_name: {
                 type: String,

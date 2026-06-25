@@ -4,11 +4,6 @@ import { sendEmail } from "../utils/mailer.utils.js";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
-export const fetchOnboardingDetails = async (id) => {
-    const user = await userModel.findById(id, { isEmailVerified: 1, isOnBoardingCompleted: 1, accountSetupStep: 1 }).lean();
-    return user;
-}
-
 export const sendOtpAndSave = async (email) => {
 
     const userExists = await userModel.findOne({ email });
@@ -162,7 +157,7 @@ export const checkResetToken = async (token) => {
 export const resetUserPassword = async (token, password) => {
     const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 
-    let user = userModel.findOne({
+    const user = await userModel.findOne({
         "resetPassword.tokenHash": tokenHash,
         "resetPassword.expiresAt": {$gt: new Date()}
     });
@@ -171,13 +166,16 @@ export const resetUserPassword = async (token, password) => {
         return false;
     }
 
-    const newPasswordHash = bcrypt.hash(password, 10);
+    const newPasswordHash = await bcrypt.hash(password, 10);
 
-    user = userModel.findOneAndUpdate({email: user.email}, {
+    const updatedUser = await userModel.findByIdAndUpdate(user._id, {
         $set: {
             "passwordHash":newPasswordHash 
+        },
+        $unset:  {
+            resetPassword : 1
         }
     }, {new: true})
 
-    return user;
+    return updatedUser;
 }
