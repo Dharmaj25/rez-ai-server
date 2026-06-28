@@ -9,7 +9,10 @@ import userRouter from "./routes/user.routes.js";
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+    origin: "http://localhost:5173",
+    credentials: true
+}));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -17,6 +20,5 @@ app.use(cookieParser());
 //Routes:
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/user", userRouter);
-
 
 export default app;

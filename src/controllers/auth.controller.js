@@ -34,15 +34,16 @@ export const checkAuth = async (req, res) => {
 export const sendOtp = async (req, res) => {
     try {
         const email = req.body.email;
-        const otpSent = await sendOtpAndSave(email);
+        const user = await sendOtpAndSave(email);
 
-        if (!otpSent) {
+        if (!user) {
             return res.status(409).json({ success: false, message: "Email is already in use. Please try again with a different email." });
         }
 
         return res.status(200).json({
             success: true,
             message: "Otp sent to user's email",
+            data: user
         });
 
     } catch (error) {

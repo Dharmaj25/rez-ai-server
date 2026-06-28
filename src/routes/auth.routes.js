@@ -16,7 +16,7 @@ const router = express.Router();
 
 router.get("/me", authenticate, checkAuth);
 
-router.post("/refresh", refreshAccessToken);
+router.get("/refresh", refreshAccessToken);
 router.post("/send-otp", emailValidator, sendOtp);
 router.post("/verify-otp", verifyOtpValidator, verifyOtp);
 router.post("/resend-otp", emailValidator, resendOtp)

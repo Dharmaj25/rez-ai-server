@@ -5,33 +5,33 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
 export const sendOtpAndSave = async (email) => {
+    const user = await userModel.findOne({ email });
+    if (!user) {
+        const otp = generateOTP();
+        const htmlContent = `<h1>Your OTP is: ${otp}</h1><p>It expires in 5 minutes.</p>`;
+        await sendEmail({
+            to: email,
+            subject: "Verify Your Email",
+            html: htmlContent
+        });
 
-    const userExists = await userModel.findOne({ email });
-    if (userExists) {
-        return false
+        const hashedOtp = await bcrypt.hash(otp.toString(), 10);
+
+        const insertedUser = await userModel.create({
+            email,
+            otp: {
+                code: hashedOtp,
+                expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+                attempts: 1
+            },
+            accountSetupStep: "OTP_VERIFICATION"
+        });
+
+        return insertedUser;
     }
-
-    const otp = generateOTP();
-    const htmlContent = `<h1>Your OTP is: ${otp}</h1><p>It expires in 5 minutes.</p>`;
-
-    await sendEmail({
-        to: email,
-        subject: "Verify Your Email",
-        html: htmlContent
-    });
-
-    const hashedOtp = await bcrypt.hash(otp.toString(), 10);
-
-    const insertedUser = await userModel.create({
-        email,
-        otp: {
-            code: hashedOtp,
-            expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-            attempts: 1
-        }
-    });
-
-    return insertedUser;
+    else {
+        return user;
+    }
 };
 
 export const checkOtp = async (email, otp) => {
@@ -159,10 +159,10 @@ export const resetUserPassword = async (token, password) => {
 
     const user = await userModel.findOne({
         "resetPassword.tokenHash": tokenHash,
-        "resetPassword.expiresAt": {$gt: new Date()}
+        "resetPassword.expiresAt": { $gt: new Date() }
     });
 
-    if(!user){
+    if (!user) {
         return false;
     }
 
@@ -170,12 +170,12 @@ export const resetUserPassword = async (token, password) => {
 
     const updatedUser = await userModel.findByIdAndUpdate(user._id, {
         $set: {
-            "passwordHash":newPasswordHash 
+            "passwordHash": newPasswordHash
         },
-        $unset:  {
-            resetPassword : 1
+        $unset: {
+            resetPassword: 1
         }
-    }, {new: true})
+    }, { new: true })
 
     return updatedUser;
 }
