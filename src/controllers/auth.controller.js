@@ -43,7 +43,7 @@ export const sendOtp = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "Otp sent to user's email",
-            data: user
+            user
         });
 
     } catch (error) {
