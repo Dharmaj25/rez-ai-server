@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
 export const sendOtpAndSave = async (email) => {
-    const user = await userModel.findOne({ email },{accountSetupStep: 1, isEmailVerified: 1, onboarding: 1, _id: 1});
+    const user = await userModel.findOne({ email }, { accountSetupStep: 1, isEmailVerified: 1, onboarding: 1, _id: 1 });
     if (!user) {
         const otp = generateOTP();
         const htmlContent = `<h1>Your OTP is: ${otp}</h1><p>It expires in 5 minutes.</p>`;
