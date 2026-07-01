@@ -153,7 +153,8 @@ export const setPassword = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            message: "Password updted successfully"
+            message: "Password updted successfully",
+            user: updatedUser
         })
     }
     catch (err) {

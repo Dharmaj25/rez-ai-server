@@ -100,7 +100,14 @@ export const savePassword = async (email, password) => {
     const updatedUser = await userModel.findOneAndUpdate({ email }, {
         passwordHash: hashedPassword,
         accountSetupStep: "PERSONAL_DETAILS"
-    }, { new: true });
+    }, { new: true,
+        projection: {
+            _id: 1,
+            email: 1,
+            isEmailVerified: 1,
+            accountSetupStep: 1,
+        }
+     });
 
     return updatedUser;
 }
